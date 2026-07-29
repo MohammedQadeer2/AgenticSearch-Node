@@ -1,0 +1,21 @@
+{
+  "dependencies": {
+    "@tavily/core": "^0.7.6",
+    "cors": "^2.8.6",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "node-cache": "^5.1.2",
+    "openai": "^7.0.0"
+  },
+  "name": "chat_gpt_clone",
+  "version": "1.0.0",
+  "description": "",
+  "main": "server.js",
+  "type": "module",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node server.js"
+  },
+  "author": "qadeer",
+  "license": "ISC"
+}
