@@ -73,7 +73,7 @@ userInput.addEventListener("keydown", (e) => {
 });
 
 async function callServer(userText) {
-    const response = await fetch('http://localhost:3001/chat', {
+    const response = await fetch('https://agenticsearch-node-1.onrender.com/chat', {
         method: 'POST',
         headers: {
             'content-type': 'application/json'
