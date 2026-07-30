@@ -72,7 +72,16 @@ export async function Generate(userQuery, userId) {
         content: userQuery,
     });
 
+    const MAX_TRIES = 10;
+    let count = 0;
+
     while (true) {
+         if(count > MAX_TRIES) {
+            return "I could not get the suitable result for this query, Please Try Again!";
+         }
+
+         count++;
+
         const completions = await client.chat.completions.create({
             temperature: 0.7,
             model: "openai/gpt-oss-20b",
@@ -105,8 +114,6 @@ export async function Generate(userQuery, userId) {
         const aiResponse = completions.choices[0].message.content;
         if (!toolCall) {
             cache.set(userId, messages);
-            console.log(JSON.stringify(cache.data));
-
             console.log(aiResponse.replace(/\*\*/g, ""));
             return (aiResponse.replace(/\*\*/g, ""));
         }
