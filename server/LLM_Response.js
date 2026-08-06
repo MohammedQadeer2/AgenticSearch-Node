@@ -1,10 +1,9 @@
 import OpenAi from "openai";
 import { tavily } from "@tavily/core";
 import dotenv from "dotenv";
-import NodeCache from 'node-cache';
+import Message from "./models/message.model.js";
+import { json } from "express";
 dotenv.config();
-
-const cache = new NodeCache({stdTTL: 60 * 60 * 24});
 
 const tvly = tavily({ apiKey: process.env.TAVILY_API_KEY });
 const client = new OpenAi({
@@ -12,9 +11,7 @@ const client = new OpenAi({
     baseURL: "https://api.groq.com/openai/v1",
 });
 
-export async function Generate(userQuery, userId) {
-    console.log(`userId : ${userId}`);
-
+export async function Generate(conversationId) {
     const baseMessage = [
         {
             role: 'system',
@@ -51,27 +48,24 @@ export async function Generate(userQuery, userId) {
             Current date and time: ${new Date().toUTCString()}               
              `
         },
-        // {
-        //     role: 'user',
-        //     content: userQuery,
-        // }
-        // {
-        //     role: 'user',
-        //     content: "what is the current weather in mumbai?"
-        //     //what is the ans of 2+2*3/4-0.7
-        //     //I want to know about the latest iphone 16 launch date
-        // }
     ]
 
+// extracting message from conversationId 
+    const savedMessages = await Message.find({ conversationId })
+        .sort({ createdAt: -1 })
+        .limit(20)
+        .lean();
 
-    const messages = cache.get(userId) ?? baseMessage;
-
-
-    messages.push({
-        role: 'user',
-        content: userQuery,
-    });
-
+        console.log(`savedMessages : ${JSON.stringify(savedMessages[0].content)}`);
+// adding that message to the messages array with systemPrompt and will give it to the llm
+    const messages = [
+        ...baseMessage,
+        ...savedMessages.reverse().map((message) => ({
+            role: message.role,
+            content: message.content
+        }))
+    ];
+    
     const MAX_TRIES = 10;
     let count = 0;
 
@@ -113,7 +107,6 @@ export async function Generate(userQuery, userId) {
         const toolCall = completions.choices[0].message.tool_calls;
         const aiResponse = completions.choices[0].message.content;
         if (!toolCall) {
-            cache.set(userId, messages);
             console.log(aiResponse.replace(/\*\*/g, ""));
             return (aiResponse.replace(/\*\*/g, ""));
         }

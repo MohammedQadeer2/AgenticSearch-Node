@@ -1,6 +1,12 @@
 import express from 'express';
 import cors from 'cors';
+import connectDb from './config/db.js'
 import { Generate } from "./LLM_Response.js";
+import Conversation from "./models/conversation.model.js";
+import Message from "./models/message.model.js";
+import authRouter from './routes/auth.route.js';
+import chatRouter from './routes/chat.route.js';
+import conversationRouter from './routes/conversation.route.js';
 const app = express();
 
 app.use(cors());
@@ -11,18 +17,11 @@ app.get('/', (req, res) => {
     res.send('Hello, World!');
 });
 
-app.post('/chat', async (req, res) => {
-    const {message, userId} = req.body;
-
-    if(!message || !userId) {
-        res.status(400).json("userId or message is likely undefined!")
-    }
-
-    // console.log(`Received message: ${message}`);
-    const response = await Generate(message, userId);
-    res.json({message : response, userId: userId });
-});
+app.use('/', chatRouter);
+app.use("/api/auth", authRouter);
+app.use("/api/conversations", conversationRouter);
 
 app.listen(PORT, () => {
+    connectDb();
     console.log("Server is running on the port " + PORT);
 });

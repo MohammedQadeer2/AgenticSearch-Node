@@ -1,0 +1,57 @@
+import { PDFLoader } from "@langchain/community/document_loaders/fs/pdf";
+import { RecursiveCharacterTextSplitter } from "@langchain/textsplitters";
+// import { OpenAIEmbeddings } from "@langchain/openai";
+import { GoogleGenerativeAIEmbeddings } from "@langchain/google-genai";
+import { PineconeStore } from "@langchain/pinecone";
+import { Pinecone } from "@pinecone-database/pinecone";
+import dotenv from "dotenv";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+
+const currentDirectory = path.dirname(fileURLToPath(import.meta.url));
+dotenv.config({ path: path.join(currentDirectory, "../.env") });
+
+
+const embeddings = new GoogleGenerativeAIEmbeddings({
+    apiKey: process.env.GOOGLE_API_KEY,
+    model: "gemini-embedding-001",
+});
+
+//pinecone client
+const pinecone = new Pinecone();
+const pineconeIndex = pinecone.Index(process.env.PINECONE_INDEX_NAME);
+
+const vectorStore = await PineconeStore.fromExistingIndex(
+    embeddings,
+    {
+        pineconeIndex,
+        maxConcurrency: 5,
+    }
+);
+
+export function getVectorStore() {
+    return vectorStore;
+}
+
+export async function indexTheDocument(filePath) {
+    const loader = new PDFLoader(filePath, { splitPages: false });
+
+    const doc = await loader.load();
+    const splitter = new RecursiveCharacterTextSplitter({
+        chunkSize: 500,
+        chunkOverlap: 100,
+    });
+
+    const text = await splitter.splitText(doc[0].pageContent); 1
+
+    const documents = text.map((chunk) => {
+        return {
+            pageContent: chunk,
+            metadata: doc[0].metadata,
+        }
+    })
+
+    await vectorStore.addDocuments(documents);
+
+
+}
