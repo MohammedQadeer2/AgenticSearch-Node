@@ -42,7 +42,7 @@ export default function Sidebar({ userId, selectedConversationId, onConversation
 
       try {
         const response = await fetch(
-          `http://localhost:3001/api/conversations?userId=${userId}&workspace=${workspace.value}`
+          `https://agenticsearch-node-1.onrender.com/api/conversations?userId=${userId}&workspace=${workspace.value}`
         );
 
         if (!response.ok) {
@@ -69,7 +69,7 @@ export default function Sidebar({ userId, selectedConversationId, onConversation
     setError("");
 
     try {
-      const response = await fetch("http://localhost:3001/api/conversations", {
+      const response = await fetch("https://agenticsearch-node-1.onrender.com/api/conversations", {
         method: "POST",
         headers: {
           "Content-Type": "application/json"

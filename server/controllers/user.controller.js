@@ -64,7 +64,7 @@ export const signOut = async (req, res) => {
   try {
     res.clearCookie("token", {
       httpOnly: true,
-      secure: false, // true in production (https)
+      secure: true, // true in production (https)
       sameSite: "lax",
     });
 

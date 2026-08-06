@@ -17,7 +17,7 @@ export default function SignUp({ onSwitch, onSuccess }) {
     setError("");
     setIsLoading(true);
     try {
-      const response = await fetch("http://localhost:3001/api/auth/signUp", {
+      const response = await fetch("https://agenticsearch-node-1.onrender.com/api/auth/signUp", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(form),

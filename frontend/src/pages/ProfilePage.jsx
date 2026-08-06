@@ -16,7 +16,7 @@ export default function ProfilePage({ onBack }) {
       }
 
       try {
-        const response = await fetch(`http://localhost:3001/api/auth/profile/${userId}`);
+        const response = await fetch(`https://agenticsearch-node-1.onrender.com/api/auth/profile/${userId}`);
 
         if (!response.ok) {
           throw new Error("Could not load profile");

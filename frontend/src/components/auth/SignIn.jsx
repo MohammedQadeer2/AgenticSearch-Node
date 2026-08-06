@@ -15,7 +15,7 @@ export default function SignIn({ onSwitch, onSuccess }) {
     setIsLoading(true);
 
     try {
-      const response = await fetch("http://localhost:3001/api/auth/signIn", {
+      const response = await fetch("https://agenticsearch-node-1.onrender.com/api/auth/signIn", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),

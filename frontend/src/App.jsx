@@ -29,7 +29,7 @@ export default function App({ onProfileClick, onLogout }) {
 
       try {
         const response = await fetch(
-          `http://localhost:3001/api/conversations/${selectedConversationId}/messages?userId=${userId}`
+          `https://agenticsearch-node-1.onrender.com/api/conversations/${selectedConversationId}/messages?userId=${userId}`
         );
 
         if (!response.ok) {
@@ -60,7 +60,7 @@ export default function App({ onProfileClick, onLogout }) {
     setIsLoading(true);
 
     try {
-      const response = await fetch('http://localhost:3001/chat', {
+      const response = await fetch('https://agenticsearch-node-1.onrender.com/chat', {
         method: 'POST',
         headers: {
           'content-type': 'application/json'
