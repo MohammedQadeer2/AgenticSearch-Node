@@ -10,6 +10,11 @@ import {
   Sparkles,
   X,
 } from "lucide-react";
+import { getProfile } from "../api/authApi";
+import {
+  createConversation,
+  getConversations,
+} from "../api/conversationApi";
 
 const workspaces = [
   {
@@ -31,6 +36,7 @@ export default function Sidebar({ userId, selectedConversationId, onConversation
   const [isLoading, setIsLoading] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
   const [error, setError] = useState("");
+  const [user, setUser] = useState(null);
   const showDetails = !isCollapsed || mobileOpen;
 
   useEffect(() => {
@@ -41,15 +47,7 @@ export default function Sidebar({ userId, selectedConversationId, onConversation
       setError("");
 
       try {
-        const response = await fetch(
-          `https://agenticsearch-node-1.onrender.com/api/conversations?userId=${userId}&workspace=${workspace.value}`
-        );
-
-        if (!response.ok) {
-          throw new Error("Could not load conversations");
-        }
-
-        const data = await response.json();
+        const data = await getConversations(userId, workspace.value);
         setConversations(data);
       } catch (error) {
         setError(error.message);
@@ -62,6 +60,13 @@ export default function Sidebar({ userId, selectedConversationId, onConversation
     loadConversations();
   }, [userId, workspace.value]);
 
+  useEffect(() => {
+    if (!userId) return;
+    getProfile(userId)
+      .then(setUser)
+      .catch(() => setUser(null));
+  }, [userId]);
+
   async function createNewChat() {
     if (!userId) return;
 
@@ -69,22 +74,7 @@ export default function Sidebar({ userId, selectedConversationId, onConversation
     setError("");
 
     try {
-      const response = await fetch("https://agenticsearch-node-1.onrender.com/api/conversations", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          userId,
-          workspace: workspace.value
-        })
-      });
-
-      if (!response.ok) {
-        throw new Error("Could not create a new chat");
-      }
-
-      const conversation = await response.json();
+      const conversation = await createConversation(userId, workspace.value);
       setConversations((previousConversations) => [conversation, ...previousConversations]);
       onConversationSelect(conversation);
       onClose();
@@ -97,7 +87,7 @@ export default function Sidebar({ userId, selectedConversationId, onConversation
 
   return (
     <aside
-      className={`w-72 ${isCollapsed ? "md:w-20" : "md:w-72"} ${mobileOpen ? "fixed inset-y-0 left-0 z-50 flex shadow-2xl shadow-black/50" : "hidden"} h-screen shrink-0 flex-col border-r border-slate-800 bg-[#0d1526] p-3 transition-all duration-200 md:static md:z-auto md:flex md:shadow-none`}
+      className={`w-72 ${isCollapsed ? "md:w-20" : "md:w-72"} ${mobileOpen ? "fixed inset-y-0 left-0 z-50 flex shadow-2xl shadow-black/50" : "hidden"} h-screen min-h-0 shrink-0 flex-col overflow-hidden border-r border-slate-800 bg-[#0d1526] p-3 transition-all duration-200 md:static md:z-auto md:flex md:shadow-none`}
     >
       <div className="mb-5 flex items-center justify-between px-1">
         {showDetails && (
@@ -157,7 +147,7 @@ export default function Sidebar({ userId, selectedConversationId, onConversation
           <p className="mt-7 px-2 text-xs font-medium uppercase tracking-wider text-slate-500">
             Recent chats
           </p>
-          <nav className="mt-2 space-y-1">
+          <nav className="mt-2 flex-1 space-y-1 overflow-y-auto pr-1">
             {isLoading && <p className="px-3 py-2 text-sm text-slate-500">Loading chats...</p>}
 
             {!isLoading && error && <p className="px-3 py-2 text-sm text-red-300">{error}</p>}
@@ -187,10 +177,10 @@ export default function Sidebar({ userId, selectedConversationId, onConversation
         </>
       )}
 
-      <div className="mt-auto border-t border-slate-800 pt-3">
+      <div className="mt-auto shrink-0 border-t border-slate-800 pt-3">
         <button onClick={onProfileClick} className="flex w-full items-center gap-3 rounded-xl px-3 py-2 hover:bg-slate-800">
           <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-gradient-to-br from-indigo-400 to-purple-500 text-xs font-bold text-white">QA</span>
-          {showDetails && <span className="min-w-0 text-left"><span className="block truncate text-sm font-medium text-slate-200">Qadeer Ahmed</span><span className="block text-xs text-slate-500">Free plan</span></span>}
+          {showDetails && <span className="min-w-0 text-left"><span className="block truncate text-sm font-medium text-slate-200">{user?.name || "Your profile"}</span><span className="block text-xs text-slate-500">Free plan</span></span>}
         </button>
         <button className="mt-1 flex w-full items-center gap-3 rounded-xl px-3 py-2 text-sm text-slate-400 hover:bg-slate-800 hover:text-white"><Settings className="h-4 w-4 shrink-0" />{showDetails && "Settings"}</button>
         <button onClick={onLogout} className="flex w-full items-center gap-3 rounded-xl px-3 py-2 text-sm text-slate-400 hover:bg-slate-800 hover:text-white"><LogOut className="h-4 w-4 shrink-0" />{showDetails && "Logout"}</button>

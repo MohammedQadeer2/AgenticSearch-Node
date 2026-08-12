@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Eye, EyeOff, LockKeyhole, Mail } from "lucide-react";
 import GoogleIcon from "./GoogleIcon";
+import { signIn } from "../../api/authApi";
 
 export default function SignIn({ onSwitch, onSuccess }) {
   const [email, setEmail] = useState("");
@@ -15,13 +16,7 @@ export default function SignIn({ onSwitch, onSuccess }) {
     setIsLoading(true);
 
     try {
-      const response = await fetch("https://agenticsearch-node-1.onrender.com/api/auth/signIn", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
-      });
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.message || "Unable to sign in");
+      const data = await signIn({ email, password });
       onSuccess(data);
     } catch (error) {
       setError(error.message);

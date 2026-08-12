@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { ArrowLeft, CalendarDays, Mail, UserRound } from "lucide-react";
+import { getProfile } from "../api/authApi";
 
 export default function ProfilePage({ onBack }) {
   const [user, setUser] = useState(null);
@@ -16,13 +17,7 @@ export default function ProfilePage({ onBack }) {
       }
 
       try {
-        const response = await fetch(`https://agenticsearch-node-1.onrender.com/api/auth/profile/${userId}`);
-
-        if (!response.ok) {
-          throw new Error("Could not load profile");
-        }
-
-        const data = await response.json();
+        const data = await getProfile(userId);
         setUser(data);
       } catch (error) {
         setError(error.message);

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Eye, EyeOff, LockKeyhole, Mail, UserRound } from "lucide-react";
 import GoogleIcon from "./GoogleIcon";
+import { signUp } from "../../api/authApi";
 
 export default function SignUp({ onSwitch, onSuccess }) {
   const [form, setForm] = useState({ name: "", email: "", password: "" });
@@ -17,13 +18,7 @@ export default function SignUp({ onSwitch, onSuccess }) {
     setError("");
     setIsLoading(true);
     try {
-      const response = await fetch("https://agenticsearch-node-1.onrender.com/api/auth/signUp", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
-      });
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.message || "Unable to create account");
+      const data = await signUp(form);
       onSuccess(data);
     } catch (error) {
       setError(error.message);
