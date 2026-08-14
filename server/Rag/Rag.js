@@ -6,16 +6,23 @@ const vectorStore = getVectorStore();
 
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
-export async function companyChat(conversationId, userQuery) {
+// Replace your old companyChat function with this updated version:
+export async function companyChat(conversationId, userQuery, targetDocId) {
     const savedMessages = await Message.find({ conversationId })
         .sort({ createdAt: -1 })
         .limit(20)
         .lean();
 
-    const relatedChunks = await vectorStore.similaritySearch(userQuery, 3);
+    // CRITICAL CHANGE: Pass the filter object as the third argument
+    // This tells Pinecone: "Only search through chunks where metadata.doc_id equals targetDocId"
+    const filter = targetDocId ? { doc_id: targetDocId } : undefined;
+
+    // Perform the similarity search using the filter
+    const relatedChunks = await vectorStore.similaritySearch(userQuery, 3, filter);
+    
     const context = relatedChunks.length > 0
         ? relatedChunks.map((chunk) => chunk.pageContent).join("\n\n")
-        : "No relevant company context was found.";
+        : "No relevant company context was found for this document.";
 
     const messages = [
         {

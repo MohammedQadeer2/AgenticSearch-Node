@@ -1,7 +1,7 @@
 import { Generate } from "../LLM_Response.js";
 import Conversation from "../models/conversation.model.js";
 import Message from "../models/message.model.js";
-import  { companyChat } from "../Rag/Rag.js";
+import { companyChat } from "../Rag/Rag.js";
 
 export const createChat = async (req, res) => {
     const { message, userId, conversationId } = req.body;
@@ -37,7 +37,11 @@ export const createChat = async (req, res) => {
         let response;
 
         if (conversation.workspace === 'company') {
-            response = await companyChat(conversationId, message);
+            // Retrieve the documentId stored in the conversation document
+            const targetDocId = conversation.documentId ? conversation.documentId.toString() : null;
+
+            // Pass targetDocId as the third argument to companyChat
+            response = await companyChat(conversationId, message, targetDocId);
         } else {
             response = await Generate(conversationId);
         }

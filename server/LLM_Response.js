@@ -2,7 +2,6 @@ import OpenAi from "openai";
 import { tavily } from "@tavily/core";
 import dotenv from "dotenv";
 import Message from "./models/message.model.js";
-import { json } from "express";
 dotenv.config();
 
 const tvly = tavily({ apiKey: process.env.TAVILY_API_KEY });
@@ -16,7 +15,6 @@ export async function Generate(conversationId) {
         {
             role: 'system',
             content: `You are Jarvis, a smart personal assistant.
-            You are Jarvis, a smart AI assistant.
 
             If you know the answer to a question, answer it directly in plain English.
 

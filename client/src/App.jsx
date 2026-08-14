@@ -93,6 +93,13 @@ export default function App({ onProfileClick, onLogout }) {
     setSelectedConversationId(conversation._id);
   };
 
+  const handleConversationDelete = (conversationId) => {
+    if (selectedConversationId === conversationId) {
+      setSelectedConversationId(null);
+      setMessages([]);
+    }
+  };
+
   return (
     <div className="flex h-screen overflow-hidden bg-[#0f172a] font-sans text-slate-100">
       {isMobileSidebarOpen && <button onClick={() => setIsMobileSidebarOpen(false)} className="fixed inset-0 z-40 bg-black/50 md:hidden" aria-label="Close sidebar" />}
@@ -100,6 +107,7 @@ export default function App({ onProfileClick, onLogout }) {
         userId={userId}
         selectedConversationId={selectedConversationId}
         onConversationSelect={handleConversationSelect}
+        onConversationDelete={handleConversationDelete}
         onProfileClick={onProfileClick}
         onLogout={onLogout}
         mobileOpen={isMobileSidebarOpen}

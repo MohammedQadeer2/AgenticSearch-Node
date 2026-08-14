@@ -33,7 +33,8 @@ export function getVectorStore() {
     return vectorStore;
 }
 
-export async function indexTheDocument(filePath) {
+// Replaced My old indexTheDocument function with this updated version:
+export async function indexTheDocument(filePath, docId) {
     const loader = new PDFLoader(filePath, { splitPages: false });
 
     const doc = await loader.load();
@@ -42,16 +43,20 @@ export async function indexTheDocument(filePath) {
         chunkOverlap: 100,
     });
 
-    const text = await splitter.splitText(doc[0].pageContent); 1
+    const text = await splitter.splitText(doc[0].pageContent);
 
+    // Map each chunk of text to a Document object with custom metadata
     const documents = text.map((chunk) => {
         return {
             pageContent: chunk,
-            metadata: doc[0].metadata,
-        }
-    })
+            metadata: {
+                ...doc[0].metadata, // Keeps original PDF metadata (like source name, page counts)
+                doc_id: docId,      // CRITICAL: Adds our custom unique document identifier
+            },
+        };
+    });
 
+    // When vectorStore adds these documents, Pinecone stores 'doc_id' alongside the vector
     await vectorStore.addDocuments(documents);
-
-
 }
+

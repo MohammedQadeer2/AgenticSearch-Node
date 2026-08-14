@@ -7,6 +7,7 @@ import Message from "./models/message.model.js";
 import authRouter from './routes/auth.route.js';
 import chatRouter from './routes/chat.route.js';
 import conversationRouter from './routes/conversation.route.js';
+import documentRouter from './routes/document.route.js';
 const app = express();
 
 app.use(cors());
@@ -20,6 +21,7 @@ app.get('/', (req, res) => {
 app.use('/', chatRouter);
 app.use("/api/auth", authRouter);
 app.use("/api/conversations", conversationRouter);
+app.use("/api/documents", documentRouter);
 
 app.listen(PORT, () => {
     connectDb();

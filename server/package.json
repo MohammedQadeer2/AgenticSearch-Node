@@ -13,6 +13,7 @@
     "langchain": "^1.5.5",
     "mongodb": "^7.5.0",
     "mongoose": "^9.9.1",
+    "multer": "^2.2.0",
     "pdf-parse": "^2.4.5"
   },
   "type": "module"
