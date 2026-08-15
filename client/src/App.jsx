@@ -14,9 +14,37 @@ export default function App({ onProfileClick, onLogout }) {
   const [selectedConversationId, setSelectedConversationId] = useState(null);
   const [isHistoryLoading, setIsHistoryLoading] = useState(false);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
+  const [viewportHeight, setViewportHeight] = useState("100dvh");
   const userId = localStorage.getItem("userId");
 
   const chatContainerRef = useRef(null);
+
+  useEffect(() => {
+    if (typeof window === "undefined" || !window.visualViewport) return;
+
+    const handleResize = () => {
+      // Set the dynamic height to match the visible layout space
+      setViewportHeight(`${window.visualViewport.height}px`);
+      
+      // Force auto-scroll to the bottom of the active conversation
+      setTimeout(() => {
+        if (chatContainerRef.current) {
+          chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
+        }
+      }, 80);
+    };
+
+    window.visualViewport.addEventListener("resize", handleResize);
+    window.visualViewport.addEventListener("scroll", handleResize);
+    
+    // Call immediately to set original height correctly
+    handleResize();
+
+    return () => {
+      window.visualViewport.removeEventListener("resize", handleResize);
+      window.visualViewport.removeEventListener("scroll", handleResize);
+    };
+  }, []);
 
   useEffect(() => {
     if (chatContainerRef.current) {
@@ -101,7 +129,10 @@ export default function App({ onProfileClick, onLogout }) {
   };
 
   return (
-    <div className="flex h-screen overflow-hidden bg-[#0f172a] font-sans text-slate-100">
+    <div 
+      style={{ height: viewportHeight }} 
+      className="flex w-full overflow-hidden bg-[#0f172a] font-sans text-slate-100"
+    >
       {isMobileSidebarOpen && <button onClick={() => setIsMobileSidebarOpen(false)} className="fixed inset-0 z-40 bg-black/50 md:hidden" aria-label="Close sidebar" />}
       <Sidebar
         userId={userId}

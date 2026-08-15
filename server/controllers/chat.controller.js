@@ -5,11 +5,15 @@ import { companyChat } from "../Rag/Rag.js";
 
 export const createChat = async (req, res) => {
     const { message, userId, conversationId } = req.body;
-    console.log(`conversationId inside Server: ${conversationId}`);
 
     if (!message || !userId || !conversationId) {
         return res.status(400).json({ message: "message, userId and conversationId are required" });
     }
+
+    // 1. Set headers for SSE (Server-Sent Events)
+    res.setHeader("Content-Type", "text/event-stream");
+    res.setHeader("Cache-Control", "no-cache");
+    res.setHeader("Connection", "keep-alive");
 
     try {
         const conversation = await Conversation.findOne({
