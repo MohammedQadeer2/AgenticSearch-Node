@@ -44,6 +44,7 @@ export const createChat = async (req, res) => {
             response = await companyChat(conversationId, message, targetDocId);
         } else {
             response = await Generate(conversationId);
+            console.log(`response of the Generate function: ${response}`);
         }
 
         const assistantMessage = await Message.create({
@@ -59,6 +60,6 @@ export const createChat = async (req, res) => {
         });
 
     } catch (error) {
-        return res.status(500).json({ message: "Could not generate a response" });
+        return res.status(500).json({ message: `Could not generate a response, Error: ${error}` });
     }
 }

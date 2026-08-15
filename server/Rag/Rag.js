@@ -19,7 +19,7 @@ export async function companyChat(conversationId, userQuery, targetDocId) {
 
     // Perform the similarity search using the filter
     const relatedChunks = await vectorStore.similaritySearch(userQuery, 3, filter);
-    
+
     const context = relatedChunks.length > 0
         ? relatedChunks.map((chunk) => chunk.pageContent).join("\n\n")
         : "No relevant company context was found for this document.";
@@ -27,7 +27,12 @@ export async function companyChat(conversationId, userQuery, targetDocId) {
     const messages = [
         {
             role: "system",
-            content: "You are a Company Knowledge assistant. Answer using the provided company context. If the answer is not in the context, say: I don't know. You may answer simple greetings naturally."
+            content: `You are a Company Knowledge assistant. Answer using the provided company context. 
+            If the answer is not in the context, say: "I don't know." You may answer simple greetings naturally.
+        
+            CRITICAL FORMATTING RULES:
+            - Always structure your answers beautifully with clean line breaks (newlines) between steps, points, or paragraphs.
+            - Never compress your response into a single line or a continuous block of text. Ensure lists are formatted vertically.`
         },
         {
             role: "system",

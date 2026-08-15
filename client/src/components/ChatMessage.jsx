@@ -1,6 +1,6 @@
 import React from "react";
 import { Copy, ThumbsUp, ThumbsDown, Share, RotateCw } from "lucide-react";
-
+import Markdown from 'react-markdown';
 export default function ChatMessage({ message }) {
   const isUser = message.sender === "user";
 
@@ -16,7 +16,9 @@ export default function ChatMessage({ message }) {
 
   return (
     <div className="flex flex-col gap-3 text-[15px] leading-relaxed text-slate-200">
-      <p className="whitespace-pre-wrap">{message.text}</p>
+      <div className="prose prose-invert max-w-none text-[15px] leading-relaxed text-slate-200">
+        <Markdown>{message.text}</Markdown>
+      </div>
 
       <div className="flex items-center gap-2 pt-1 text-slate-400">
         <button className="p-1.5 hover:text-white hover:bg-[#1e293b] rounded-md transition" title="Copy">
