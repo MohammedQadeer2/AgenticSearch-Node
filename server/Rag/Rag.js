@@ -6,15 +6,14 @@ const vectorStore = getVectorStore();
 
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
-// Replace your old companyChat function with this updated version:
-export async function companyChat(conversationId, userQuery, targetDocId) {
+// Streaming version of companyChat
+export async function* companyChatStream(conversationId, userQuery, targetDocId) {
     const savedMessages = await Message.find({ conversationId })
         .sort({ createdAt: -1 })
         .limit(20)
         .lean();
 
-    // CRITICAL CHANGE: Pass the filter object as the third argument
-    // This tells Pinecone: "Only search through chunks where metadata.doc_id equals targetDocId"
+    // Pass the filter object as the third argument for doc isolation
     const filter = targetDocId ? { doc_id: targetDocId } : undefined;
 
     // Perform the similarity search using the filter
@@ -44,11 +43,17 @@ export async function companyChat(conversationId, userQuery, targetDocId) {
         }))
     ];
 
-    const completions = await groq.chat.completions.create({
+    const stream = await groq.chat.completions.create({
         messages: messages,
         model: "openai/gpt-oss-20b",
+        stream: true,
     });
 
-    const aiResponse = completions.choices[0].message.content;
-    return aiResponse.replace(/\*\*/g, "");
+    for await (const chunk of stream) {
+        const content = chunk.choices[0]?.delta?.content || "";
+        if (content) {
+            yield content;
+        }
+    }
 }
+

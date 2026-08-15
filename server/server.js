@@ -1,7 +1,6 @@
 import express from 'express';
 import cors from 'cors';
 import connectDb from './config/db.js'
-import { Generate } from "./LLM_Response.js";
 import Conversation from "./models/conversation.model.js";
 import Message from "./models/message.model.js";
 import authRouter from './routes/auth.route.js';

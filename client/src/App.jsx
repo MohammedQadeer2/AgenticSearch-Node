@@ -5,7 +5,7 @@ import ChatMessage from "./components/ChatMessage";
 import ChatInput from "./components/ChatInput";
 import Sidebar from "./components/Sidebar";
 import { getMessages } from "./api/conversationApi";
-import { sendMessage } from "./api/chatApi";
+import { sendMessageStream } from "./api/chatApi";
 
 export default function App({ onProfileClick, onLogout }) {
   const [input, setInput] = useState("");
@@ -18,6 +18,10 @@ export default function App({ onProfileClick, onLogout }) {
   const userId = localStorage.getItem("userId");
 
   const chatContainerRef = useRef(null);
+
+  // Generate a compact, collision-resistant id for local-only messages
+  // (Date.now() alone can collide when two messages are created in the same ms).
+  const generateId = () => `${Date.now()}-${Math.random().toString(36).slice(2,9)}`;
 
   useEffect(() => {
     if (typeof window === "undefined" || !window.visualViewport) return;
@@ -82,26 +86,56 @@ export default function App({ onProfileClick, onLogout }) {
   const handleApiCall = async (userText) => {
     setIsLoading(true);
 
-    try {
-      const result = await sendMessage(userText, userId, selectedConversationId);
-      const llmMessage = {
-        id: Date.now(),
-        sender: "llm",
-        text: result.message,
-      };
+    // Create a unique id for the assistant placeholder message
+    const assistantMsgId = generateId();
 
-      setMessages((previousMessages) => [...previousMessages, llmMessage]);
+    try {
+      // Add an initial empty message for the assistant that we will append tokens to in real-time
+      // Use a generated id so React keys stay unique and streaming updates always target
+      // the correct placeholder element.
+      setMessages((previousMessages) => [
+        ...previousMessages,
+        { id: assistantMsgId, sender: "llm", text: "" },
+      ]);
+
+      // Stream the response from the server chunk by chunk
+      await sendMessageStream(
+        userText,
+        userId,
+        selectedConversationId,
+        (token) => {
+          // As each new token arrives from SSE, append it directly into the active message
+          setMessages((prevMessages) =>
+            prevMessages.map((msg) =>
+              msg.id === assistantMsgId
+                ? { ...msg, text: msg.text + token }
+                : msg
+            )
+          );
+        }
+      );
 
     } catch (error) {
       console.error("Error occurred while fetching API:", error);
-      setMessages((previousMessages) => [
-        ...previousMessages,
-        {
-          id: Date.now(),
-          sender: "llm",
-          text: "Sorry, something went wrong. Please try again.",
-        },
-      ]);
+      setMessages((previousMessages) => {
+        // If the placeholder message was added, update it with an error message
+        const exists = previousMessages.some((m) => m.id === assistantMsgId);
+        if (exists) {
+          return previousMessages.map((msg) =>
+            msg.id === assistantMsgId
+              ? { ...msg, text: msg.text ? msg.text + "\n\n[Error: Stream interrupted]" : "Sorry, something went wrong. Please try again." }
+              : msg
+          );
+        }
+        return [
+          ...previousMessages,
+          {
+            id: Date.now(),
+            sender: "llm",
+            text: "Sorry, something went wrong. Please try again.",
+          },
+        ];
+      });
     } finally {
       setIsLoading(false);
     }
@@ -109,8 +143,9 @@ export default function App({ onProfileClick, onLogout }) {
 
   const handleSend = () => {
     if (!input.trim() || isLoading || !selectedConversationId) return;
-    
-    const newMessage = { id: Date.now(), sender: "user", text: input.trim() };
+      // Generate a unique id for the outgoing user message to avoid collisions
+      // with the assistant placeholder and to keep React stable during updates.
+      const newMessage = { id: generateId(), sender: "user", text: input.trim() };
     setMessages((prev) => [...prev, newMessage]);
     handleApiCall(input.trim());
     setInput("");

@@ -11,10 +11,10 @@ import { GenGraph } from "./utility.js";
 
 dotenv.config();
 
-// Define a stable checkpointer instance outside the function or inside
+// Define a stable checkpointer instance
 const checkpointer = new MemorySaver();
 
-export async function Generate(conversationId) {
+export async function* GenerateStream(conversationId) {
     const baseMessage = [
         {
             role: 'system',
@@ -55,12 +55,13 @@ export async function Generate(conversationId) {
         .lean();
 
     if (savedMessages.length === 0) {
-        return "I couldn't find any message to respond to.";
+        yield "I couldn't find any message to respond to.";
+        return;
     }
 
     console.log(`Saved messages count: ${savedMessages.length}`);
 
-    // 2. Map MongoDB history into standard LangChain messages to feed the Agent's memory
+    // 2. Map MongoDB history into standard LangChain messages
     const langchainMessages = savedMessages.reverse().map((message) => {
         if (message.role === "assistant" || message.role === "llm") {
             return new AIMessage(message.content);
@@ -72,7 +73,6 @@ export async function Generate(conversationId) {
     // 3. Define the tools
     const get_calender_events = tool(
         async ({ query }) => {
-            // here we will use the google calendar
             return JSON.stringify([
                 { title: "You have a meeting with CEO of google.", time: '2pm', location: 'Gachchi Bowli' },
             ]).replace(/\*/g, "");
@@ -95,7 +95,8 @@ export async function Generate(conversationId) {
     const toolNode = new ToolNode(Tools);
 
     const llm = new ChatGroq({
-        model: "openai/gpt-oss-20b", // Ensure this matches your Groq dashboard custom model
+        model: "openai/gpt-oss-20b",
+        streaming: true, // CRITICAL: Enables token streaming in ChatGroq
     }).bindTools(Tools);
 
     // 4. Define Graph Nodes & Conditional Routing
@@ -110,14 +111,6 @@ export async function Generate(conversationId) {
 
     function whichPath(state) {
         const lastMessage = state.messages[state.messages.length - 1];
-
-        // Safely extract text contents for logging
-        const Human = state.messages[0]?.content || "";
-        const Ai = lastMessage?.content || "";
-        console.log(`Human's initial message: ${JSON.stringify(Human)}`);
-        console.log(`AI's last message: ${JSON.stringify(Ai)}`);
-
-        // Check if tool calling was triggered
         if (lastMessage.tool_calls && lastMessage.tool_calls.length > 0) {
             return "tools";
         }
@@ -132,21 +125,43 @@ export async function Generate(conversationId) {
         .addEdge("tools", "LLM")
         .addConditionalEdges("LLM", whichPath);
 
-    // Compile the graph using our instantiated MemorySaver
     const app = graph.compile({ checkpointer });
 
-    // Generate graph visualization image
-    await GenGraph(app, './StateGraph.png');
+    try {
+        await GenGraph(app, './StateGraph.png');
+    } catch (e) {
+        console.error("Graph visualization error:", e);
+    }
 
-    // 6. Invoke the State Graph passing full history and configuring the checkpointer thread
-    const result = await app.invoke(
+    // 6. Stream events using LangGraph v2 event stream
+    const eventStream = await app.streamEvents(
         { messages: langchainMessages },
-        { configurable: { thread_id: conversationId } } // thread_id links the checkpointer to this unique chat session
+        { 
+            configurable: { thread_id: conversationId },
+            version: "v2" 
+        }
     );
 
-    // Retrieve final AI message safely
-    const finalAiMessage = result.messages[result.messages.length - 1];
-    const aiResponse = finalAiMessage.content;
+    let streamedAnyChunks = false;
 
-    return aiResponse.replace(/\*\*/g, "");
+    for await (const event of eventStream) {
+        // Stream token-by-token when available
+        if (event.event === "on_chat_model_stream") {
+            const chunk = event.data?.chunk;
+            if (chunk && typeof chunk.content === "string" && chunk.content.length > 0) {
+                streamedAnyChunks = true;
+                yield chunk.content;
+            }
+        } else if (event.event === "on_chat_model_end") {
+            // Fallback: If streaming was not supported for a particular node, yield the complete text
+            if (!streamedAnyChunks) {
+                const output = event.data?.output;
+                if (output && typeof output.content === "string" && output.content.trim().length > 0) {
+                    streamedAnyChunks = true;
+                    yield output.content;
+                }
+            }
+        }
+    }
 }
+
