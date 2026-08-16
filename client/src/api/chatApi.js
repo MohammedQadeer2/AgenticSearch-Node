@@ -1,4 +1,4 @@
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:3001";
+import { API_BASE_URL } from "./apiClient";
 
 /**
  * Sends a message to the backend and streams response text chunks in real-time.
